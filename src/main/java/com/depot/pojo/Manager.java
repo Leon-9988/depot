@@ -257,4 +257,71 @@ public class Manager {
         }
         throw new IllegalArgumentException("Customer with specified sequence number not found: " + sequenceNum);
     }
+    
+    public static void main(String[] args) {
+        Manager manager = new Manager();
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("=== Warehouse Management System ===");
+            System.out.println("1. Load data from files");
+            System.out.println("2. Add new customer");
+            System.out.println("3. Add new parcel");
+            System.out.println("4. Process next customer");
+            System.out.println("5. Print report");
+            System.out.println("6. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter customer data file path: ");
+                    String customerFile = scanner.nextLine();
+                    System.out.print("Enter parcel data file path: ");
+                    String parcelFile = scanner.nextLine();
+                    manager.initSystem(customerFile, parcelFile);
+                    break;
+                case 2:
+                    System.out.print("Enter customer name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter parcel IDs (comma separated): ");
+                    String[] parcelIds = scanner.nextLine().split(",");
+                    manager.addNewCustomer(name, parcelIds);
+                    break;
+                case 3:
+                    System.out.print("Enter parcel ID: ");
+                    String id = scanner.nextLine();
+                    System.out.print("Enter storage days: ");
+                    int days = scanner.nextInt();
+                    System.out.print("Enter weight: ");
+                    float weight = scanner.nextFloat();
+                    System.out.print("Enter dimensions (length, width, height): ");
+                    float length = scanner.nextFloat();
+                    float width = scanner.nextFloat();
+                    float height = scanner.nextFloat();
+                    manager.addNewParcel(id, days, weight, length, width, height);
+                    break;
+                case 4:
+                    try {
+                        manager.processNextCustomer();
+                    } catch (IllegalStateException e) {
+                        System.out.println("No customers in queue.");
+                    }
+                    break;
+                case 5:
+                    System.out.print("Enter report filename: ");
+                    String filename = scanner.nextLine();
+                    manager.printReport(filename);
+                    break;
+                case 6:
+                    System.out.println("Exiting system.");
+                    scanner.close();
+                    return;
+                default:
+                    System.out.println("Invalid option. Please try again.");
+            }
+        }
+    }
 } 

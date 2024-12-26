@@ -110,14 +110,14 @@ public class DepotView extends JFrame {
         searchButton = new JButton("Search Parcel");
         addCustomerButton = new JButton("Add Customer");
         addParcelButton = new JButton("Add Parcel");
-//        deleteCustomerButton = new JButton("Delete Customer");
+        deleteCustomerButton = new JButton("Delete Customer");
         
         buttonPanel.add(initButton);
         buttonPanel.add(processButton);
         buttonPanel.add(searchButton);
         buttonPanel.add(addCustomerButton);
         buttonPanel.add(addParcelButton);
-//        buttonPanel.add(deleteCustomerButton);
+        buttonPanel.add(deleteCustomerButton);
         
         // Create log area
         logArea = new JTextArea();

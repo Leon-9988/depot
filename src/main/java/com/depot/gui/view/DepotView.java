@@ -106,15 +106,15 @@ public class DepotView extends JFrame {
         // Create button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         initButton = new JButton("Initialize System");
-//        processButton = new JButton("Process Next Customer");
-//        searchButton = new JButton("Search Parcel");
+        processButton = new JButton("Process Next Customer");
+        searchButton = new JButton("Search Parcel");
 //        addCustomerButton = new JButton("Add Customer");
 //        addParcelButton = new JButton("Add Parcel");
 //        deleteCustomerButton = new JButton("Delete Customer");
         
         buttonPanel.add(initButton);
-//        buttonPanel.add(processButton);
-//        buttonPanel.add(searchButton);
+        buttonPanel.add(processButton);
+        buttonPanel.add(searchButton);
 //        buttonPanel.add(addCustomerButton);
 //        buttonPanel.add(addParcelButton);
 //        buttonPanel.add(deleteCustomerButton);

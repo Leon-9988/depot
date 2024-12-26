@@ -72,6 +72,14 @@ public class DepotController {
     }
     
     private void addCustomer() {
+        if (model.getCustomerFilePath() == null) {
+            JOptionPane.showMessageDialog(view, 
+                "Please initialize the system first", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // Create input dialog
         JTextField nameField = new JTextField();
         JTextField parcelsField = new JTextField();
@@ -85,15 +93,27 @@ public class DepotController {
             JOptionPane.OK_CANCEL_OPTION);
             
         if (option == JOptionPane.OK_OPTION) {
-            String name = nameField.getText();
-            String[] parcelIds = parcelsField.getText().split(";");
-            
-            model.addNewCustomer(name, parcelIds);
-            updateDisplay();
+            try {
+                String name = nameField.getText();
+                String[] parcelIds = parcelsField.getText().split(";");
+                
+                model.addNewCustomer(name, parcelIds);
+                updateDisplay();
+            } catch (IllegalStateException e) {
+                JOptionPane.showMessageDialog(view, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     
     private void addParcel() {
+        if (model.getParcelFilePath() == null) {
+            JOptionPane.showMessageDialog(view, 
+                "Please initialize the system first", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // Create input dialog
         JTextField idField = new JTextField();
         JTextField daysField = new JTextField();
@@ -127,6 +147,8 @@ public class DepotController {
                 updateDisplay();
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(view, "Please enter valid numbers");
+            } catch (IllegalStateException e) {
+                JOptionPane.showMessageDialog(view, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

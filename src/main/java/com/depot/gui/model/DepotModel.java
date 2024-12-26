@@ -15,6 +15,8 @@ public class DepotModel {
     private CustomerTableModel customerTableModel;
     private ParcelTableModel parcelTableModel;
     private ProcessedParcelTableModel processedParcelTableModel;
+    private String customerFilePath;
+    private String parcelFilePath;
     
     public DepotModel() {
         this.manager = new Manager();
@@ -25,6 +27,8 @@ public class DepotModel {
     }
     
     public void initSystem(String customerFile, String parcelFile) {
+        this.customerFilePath = customerFile;
+        this.parcelFilePath = parcelFile;
         manager.initSystem(customerFile, parcelFile);
         updateTables();
     }
@@ -39,12 +43,18 @@ public class DepotModel {
     }
     
     public void addNewCustomer(String name, String[] parcelIds) {
-        manager.addNewCustomer(name, parcelIds);
+        if (customerFilePath == null) {
+            throw new IllegalStateException("Please initialize the system first");
+        }
+        manager.addNewCustomer(name, parcelIds, customerFilePath);
         updateTables();
     }
     
     public void addNewParcel(String id, int days, float weight, float length, float width, float height) {
-        manager.addNewParcel(id, days, weight, length, width, height);
+        if (parcelFilePath == null) {
+            throw new IllegalStateException("Please initialize the system first");
+        }
+        manager.addNewParcel(id, days, weight, length, width, height, parcelFilePath);
         updateTables();
     }
     
@@ -112,6 +122,14 @@ public class DepotModel {
     public void deleteCustomer(int sequenceNum) {
         manager.deleteCustomer(sequenceNum);
         updateTables();
+    }
+    
+    public String getCustomerFilePath() {
+        return customerFilePath;
+    }
+    
+    public String getParcelFilePath() {
+        return parcelFilePath;
     }
 }
 

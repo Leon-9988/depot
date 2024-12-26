@@ -189,7 +189,7 @@ public class Manager {
         return worker;
     }
     
-    public void addNewCustomer(String name, String[] parcelIds) {
+    public void addNewCustomer(String name, String[] parcelIds, String customerFilePath) {
         int seqNum = generateSequenceNum();
         Customer customer = new Customer(seqNum, name);
         for (String parcelId : parcelIds) {
@@ -197,8 +197,8 @@ public class Manager {
         }
         customerQueue.addCustomer(customer);
         
-        // Update CSV file
-        try (FileWriter fw = new FileWriter("src/main/resources/customers.csv", true)) {
+        // Update specified customer file
+        try (FileWriter fw = new FileWriter(customerFilePath, true)) {
             StringBuilder parcels = new StringBuilder();
             for (int i = 0; i < parcelIds.length; i++) {
                 if (i > 0) parcels.append(";");
@@ -211,13 +211,13 @@ public class Manager {
         }
     }
     
-    public void addNewParcel(String id, int days, float weight, float length, float width, float height) {
+    public void addNewParcel(String id, int days, float weight, float length, float width, float height, String parcelFilePath) {
         Dimension dimension = new Dimension(length, width, height);
         Parcel parcel = new Parcel(id, days, weight, dimension);
         parcelMap.addParcel(parcel);
         
-        // Update CSV file
-        try (FileWriter fw = new FileWriter("src/main/resources/parcels.csv", true)) {
+        // Update specified parcel file
+        try (FileWriter fw = new FileWriter(parcelFilePath, true)) {
             fw.write(String.format("%s,%d,%.1f,%.1f,%.1f,%.1f\n", 
                 id, days, weight, length, width, height));
             Log.getInstance().addLog("New parcel added: " + id);
@@ -288,7 +288,7 @@ public class Manager {
                     String name = scanner.nextLine();
                     System.out.print("Enter parcel IDs (comma separated): ");
                     String[] parcelIds = scanner.nextLine().split(",");
-                    manager.addNewCustomer(name, parcelIds);
+                    //manager.addNewCustomer(name, parcelIds);
                     break;
                 case 3:
                     System.out.print("Enter parcel ID: ");
@@ -301,7 +301,7 @@ public class Manager {
                     float length = scanner.nextFloat();
                     float width = scanner.nextFloat();
                     float height = scanner.nextFloat();
-                    manager.addNewParcel(id, days, weight, length, width, height);
+                    //manager.addNewParcel(id, days, weight, length, width, height);
                     break;
                 case 4:
                     try {

@@ -3,8 +3,11 @@ package com.depot.gui.controller;
 import com.depot.gui.model.DepotModel;
 import com.depot.gui.view.DepotView;
 import com.depot.pojo.Log;
+import com.depot.pojo.common.Customer;
 
 import javax.swing.*;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
 
 public class DepotController {
     private DepotModel model;
@@ -108,13 +111,13 @@ public class DepotController {
     private void addParcel() {
         if (model.getParcelFilePath() == null) {
             JOptionPane.showMessageDialog(view, 
-                "Please initialize the system first", 
-                "Error", 
+                "请先初始化系统", 
+                "错误", 
                 JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Create input dialog
+        // 创建输入对话框
         JTextField idField = new JTextField();
         JTextField daysField = new JTextField();
         JTextField weightField = new JTextField();
@@ -122,16 +125,27 @@ public class DepotController {
         JTextField widthField = new JTextField();
         JTextField heightField = new JTextField();
         
+        // 创建客户选择下拉框
+        DefaultComboBoxModel<String> customerModel = new DefaultComboBoxModel<>();
+        customerModel.addElement("-- Select Customer --");  // Default option
+        
+        // 获取所有客户并添加到下拉框
+        for (Customer customer : model.getCustomerList()) {
+            customerModel.addElement(customer.getSequenceNum() + " - " + customer.getName());
+        }
+        JComboBox<String> customerCombo = new JComboBox<>(customerModel);
+        
         Object[] message = {
             "Parcel ID:", idField,
             "Storage Days:", daysField,
             "Weight:", weightField,
             "Length:", lengthField,
             "Width:", widthField,
-            "Height:", heightField
+            "Height:", heightField,
+            "Assign to Customer:", customerCombo
         };
         
-        int option = JOptionPane.showConfirmDialog(view, message, "Add Parcel", 
+        int option = JOptionPane.showConfirmDialog(view, message, "添加包裹", 
             JOptionPane.OK_CANCEL_OPTION);
             
         if (option == JOptionPane.OK_OPTION) {
@@ -143,12 +157,19 @@ public class DepotController {
                 float width = Float.parseFloat(widthField.getText());
                 float height = Float.parseFloat(heightField.getText());
                 
-                model.addNewParcel(id, days, weight, length, width, height);
+                // 获取选中的客户ID
+                String selectedCustomer = (String) customerCombo.getSelectedItem();
+                String customerId = null;
+                if (selectedCustomer != null && !selectedCustomer.equals("-- 选择客户 --")) {
+                    customerId = selectedCustomer.split(" - ")[0];
+                }
+                
+                model.addNewParcel(id, days, weight, length, width, height, customerId);
                 updateDisplay();
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(view, "Please enter valid numbers");
+                JOptionPane.showMessageDialog(view, "请输入有效的数字");
             } catch (IllegalStateException e) {
-                JOptionPane.showMessageDialog(view, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(view, e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

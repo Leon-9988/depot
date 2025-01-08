@@ -1,38 +1,39 @@
 package com.depot.pojo.common;
-public class Customer extends ListNode {
-    private int sequence_num;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Customer {
+    private int sequenceNum;
     private String name;
-    private String[] parcels;
+    private List<String> parcels;
     private float fee;
     
-    public Customer(int sequence_num, String name) {
-        this.sequence_num = sequence_num;
+    public Customer(int sequenceNum, String name) {
+        this.sequenceNum = sequenceNum;
         this.name = name;
-        this.parcels = new String[10]; // 初始化数组，假设每个客户最多10个包裹
+        this.parcels = new ArrayList<>();
         this.fee = 0.0f;
     }
     
-    public String[] getparcels(int count) {
-        if (count == 0) {
-            return parcels;
-        }
-        String[] result = new String[count];
-        System.arraycopy(parcels, 0, result, 0, Math.min(count, parcels.length));
-        return result;
-    }
-
     public void addParcel(String parcelId) {
-        for (int i = 0; i < parcels.length; i++) {
-            if (parcels[i] == null) {
-                parcels[i] = parcelId;
-                break;
-            }
+        parcels.add(parcelId);
+    }
+    
+    public String[] getParcels(int count) {
+        if (count == 0) {
+            return parcels.toArray(new String[0]);
         }
+        String[] result = new String[Math.min(count, parcels.size())];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = parcels.get(i);
+        }
+        return result;
     }
     
     // Getters and setters
-    public int getSequence_num() { return sequence_num; }
+    public int getSequenceNum() { return sequenceNum; }
     public String getName() { return name; }
-    public float getcost() { return fee; }
+    public float getCost() { return fee; }
     public void setFee(float fee) { this.fee = fee; }
 } 

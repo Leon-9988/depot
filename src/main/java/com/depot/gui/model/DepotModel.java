@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.LinkedList;
 
 public class DepotModel {
     private Manager manager;
@@ -50,11 +52,11 @@ public class DepotModel {
         updateTables();
     }
     
-    public void addNewParcel(String id, int days, float weight, float length, float width, float height) {
+    public void addNewParcel(String id, int days, float weight, float length, float width, float height, String customerId) {
         if (parcelFilePath == null) {
-            throw new IllegalStateException("Please initialize the system first");
+            throw new IllegalStateException("请先初始化系统");
         }
-        manager.addNewParcel(id, days, weight, length, width, height, parcelFilePath);
+        manager.addNewParcel(id, days, weight, length, width, height, customerId, parcelFilePath);
         updateTables();
     }
     
@@ -69,14 +71,8 @@ public class DepotModel {
         processedParcelTableModel.updateData(getProcessedParcelList());
     }
     
-    private List<Customer> getCustomerList() {
-        List<Customer> customers = new ArrayList<>();
-        Customer current = manager.getCustomerQueue().getHead();
-        while (current != null) {
-            customers.add(current);
-            current = (Customer) current.next;
-        }
-        return customers;
+    public List<Customer> getCustomerList() {
+        return new ArrayList<>(manager.getCustomerQueue().getCustomers());
     }
     
     private List<Parcel> getParcelList() {
@@ -98,7 +94,7 @@ public class DepotModel {
     public void updateWorkStatus(DepotView view) {
         Customer currentCustomer = manager.getWorker().getCurrentCustomer();
         Parcel currentParcel = manager.getWorker().getCurrentParcel();
-        float currentFee = currentCustomer != null ? currentCustomer.getcost() : 0.0f;
+        float currentFee = currentCustomer != null ? currentCustomer.getCost() : 0.0f;
         
         view.updateWorkStatus(
             currentCustomer != null ? currentCustomer.getName() : null,
@@ -166,19 +162,19 @@ class CustomerTableModel extends AbstractTableModel {
     public Object getValueAt(int rowIndex, int columnIndex) {
         Customer customer = customers.get(rowIndex);
         switch (columnIndex) {
-            case 0: return customer.getSequence_num();
+            case 0: return customer.getSequenceNum();
             case 1: return customer.getName();
             case 2: 
-                String[] parcelIds = customer.getparcels(0);
-                return String.join(", ", parcelIds);
-            case 3: return calculateTotalFee(customer);
-            default: return null;
+                String[] parcelIds = customer.getParcels(0);
+                return parcelIds.length > 0 ? String.join(", ", parcelIds) : "";
+            case 3: return String.format("%.2f", calculateTotalFee(customer));
+            default: return "";
         }
     }
     
     private float calculateTotalFee(Customer customer) {
         float totalFee = 0;
-        String[] parcelIds = customer.getparcels(0);
+        String[] parcelIds = customer.getParcels(0);
         for (String parcelId : parcelIds) {
             if (parcelId != null) {
                 Parcel parcel = manager.getParcelMap().getParcel(parcelId);

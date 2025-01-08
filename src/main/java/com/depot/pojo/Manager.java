@@ -1,22 +1,26 @@
 package com.depot.pojo;
 
+import com.depot.gui.controller.DepotController;
+import com.depot.gui.model.DepotModel;
+import com.depot.gui.view.DepotView;
 import com.depot.pojo.common.Customer;
 import com.depot.pojo.common.Dimension;
 import com.depot.pojo.common.Parcel;
 
+import javax.swing.*;
 import java.io.*;
 import java.time.LocalDate;
 import java.util.*;
 
 public class Manager {
-    private QueueOfCustomers customerQueue;
+    private QueOfCustomers customerQueue;
     private ParcelMap parcelMap;
     private Worker worker;
     private Set<String> processedParcels;
     private int currentSequenceNum = 1;
     
     public Manager() {
-        this.customerQueue = new QueueOfCustomers();
+        this.customerQueue = new QueOfCustomers();
         this.parcelMap = new ParcelMap();
         this.worker = new Worker();
         this.processedParcels = new HashSet<>();
@@ -25,7 +29,7 @@ public class Manager {
     public void initSystem(String customerFile, String parcelFile) {
         loadCustomersFromFile(customerFile);
         loadParcelsFromFile(parcelFile);
-        sortCustomers();
+        sortParcels();
         Log.getInstance().addLog("System initialization completed");
     }
     
@@ -49,16 +53,16 @@ public class Manager {
         }
     }
     
-    public void sortCustomers() {
-        List<Customer> customers = new ArrayList<>();
-        Customer current = customerQueue.getHead();
-        while (current != null) {
-            customers.add(current);
-            current = (Customer) current.next;
-        }
+    public void sortParcels() {
+        List<Parcel> parcels = new ArrayList<>(parcelMap.getAllParcels().values());
+        parcels.sort((p1, p2) -> Float.compare(p2.getSize(), p1.getSize()));
         
-        customers.sort(Comparator.comparing(Customer::getName));
-        Log.getInstance().addLog("Customer list sorted");
+        // 清空并重新添加排序后的包裹
+        parcelMap = new ParcelMap();
+        for (Parcel parcel : parcels) {
+            parcelMap.addParcel(parcel);
+        }
+        Log.getInstance().addLog("Parcels sorted by size");
     }
     
     public float getPerDayCost(LocalDate date) {
@@ -98,7 +102,7 @@ public class Manager {
     
     public void loadCustomersFromFile(String filename) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-            String line ; // Skip CSV header
+            String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
                 if (parts.length >= 2) {
@@ -110,7 +114,9 @@ public class Manager {
                     
                     Customer customer = new Customer(seqNum, name);
                     for (String parcelId : parcelIds) {
-                        customer.addParcel(parcelId.trim());
+                        if (!parcelId.trim().isEmpty()) {
+                            customer.addParcel(parcelId.trim());
+                        }
                     }
                     customerQueue.addCustomer(customer);
                 }
@@ -151,7 +157,7 @@ public class Manager {
             throw new IllegalStateException("No customers in queue");
         }
         
-        String[] parcelIds = customer.getparcels(0);
+        String[] parcelIds = customer.getParcels(0);
         float totalFee = 0;
         
         for (String parcelId : parcelIds) {
@@ -161,7 +167,7 @@ public class Manager {
                     worker.processCustomer(customer, parcel);
                     parcelMap.removeParcel(parcelId);
                     processedParcels.add(parcelId);
-                    totalFee += customer.getcost();
+                    totalFee += customer.getCost();
                 }
             }
         }
@@ -177,7 +183,7 @@ public class Manager {
         return processedParcels.contains(parcelId);
     }
     
-    public QueueOfCustomers getCustomerQueue() {
+    public QueOfCustomers getCustomerQueue() {
         return customerQueue;
     }
     
@@ -211,12 +217,26 @@ public class Manager {
         }
     }
     
-    public void addNewParcel(String id, int days, float weight, float length, float width, float height, String parcelFilePath) {
+    public void addNewParcel(String id, int days, float weight, float length, float width, float height, String customerId, String parcelFilePath) {
+        // Create new parcel
         Dimension dimension = new Dimension(length, width, height);
         Parcel parcel = new Parcel(id, days, weight, dimension);
         parcelMap.addParcel(parcel);
         
-        // Update specified parcel file
+        // If customer is specified, assign parcel to customer
+        if (customerId != null && !customerId.isEmpty()) {
+            Queue<Customer> tempQueue = new LinkedList<>(customerQueue.getCustomers());
+            while (!tempQueue.isEmpty()) {
+                Customer customer = tempQueue.poll();
+                if (String.valueOf(customer.getSequenceNum()).equals(customerId)) {
+                    customer.addParcel(id);
+                    Log.getInstance().addLog(String.format("Parcel %s assigned to customer %s", id, customer.getName()));
+                    break;
+                }
+            }
+        }
+        
+        // Update parcel file
         try (FileWriter fw = new FileWriter(parcelFilePath, true)) {
             fw.write(String.format("%s,%d,%.1f,%.1f,%.1f,%.1f\n", 
                 id, days, weight, length, width, height));
@@ -235,93 +255,49 @@ public class Manager {
     }
     
     public void deleteCustomer(int sequenceNum) {
-        Customer current = customerQueue.getHead();
-        Customer prev = null;
+        Queue<Customer> tempQueue = new LinkedList<>();
+        Customer found = null;
         
-        while (current != null) {
-            if (current.getSequence_num() == sequenceNum) {
-                if (prev == null) {
-                    // If it's the head of the queue
-                    customerQueue.setHead((Customer)current.next);
-                } else {
-                    // If it's in the middle or at the end of the queue
-                    prev.next = current.next;
-                }
-                customerQueue.decreaseSize();
-                Log.getInstance().addLog(String.format("Customer %s (Sequence number: %d) deleted", 
-                    current.getName(), sequenceNum));
-                return;
+        // Search for customer to delete
+        while (!customerQueue.getCustomers().isEmpty()) {
+            Customer customer = customerQueue.removeCustomer();
+            if (customer.getSequenceNum() == sequenceNum) {
+                found = customer;
+            } else {
+                tempQueue.offer(customer);
             }
-            prev = current;
-            current = (Customer)current.next;
         }
-        throw new IllegalArgumentException("Customer with specified sequence number not found: " + sequenceNum);
+        
+        // Return remaining customers to queue
+        while (!tempQueue.isEmpty()) {
+            customerQueue.addCustomer((Customer)tempQueue.poll());
+        }
+        
+        if (found == null) {
+            throw new IllegalArgumentException("Customer with specified sequence number not found: " + sequenceNum);
+        }
+        
+        Log.getInstance().addLog(String.format("Customer %s (Sequence number: %d) deleted", 
+            found.getName(), sequenceNum));
     }
     
-    public static void main(String[] args) {
-        Manager manager = new Manager();
-        Scanner scanner = new Scanner(System.in);
-
-        while (true) {
-            System.out.println("=== Warehouse Management System ===");
-            System.out.println("1. Load data from files");
-            System.out.println("2. Add new customer");
-            System.out.println("3. Add new parcel");
-            System.out.println("4. Process next customer");
-            System.out.println("5. Print report");
-            System.out.println("6. Exit");
-            System.out.print("Choose an option: ");
-
-            int choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
-
-            switch (choice) {
-                case 1:
-                    System.out.print("Enter customer data file path: ");
-                    String customerFile = scanner.nextLine();
-                    System.out.print("Enter parcel data file path: ");
-                    String parcelFile = scanner.nextLine();
-                    manager.initSystem(customerFile, parcelFile);
-                    break;
-                case 2:
-                    System.out.print("Enter customer name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter parcel IDs (comma separated): ");
-                    String[] parcelIds = scanner.nextLine().split(",");
-                    //manager.addNewCustomer(name, parcelIds);
-                    break;
-                case 3:
-                    System.out.print("Enter parcel ID: ");
-                    String id = scanner.nextLine();
-                    System.out.print("Enter storage days: ");
-                    int days = scanner.nextInt();
-                    System.out.print("Enter weight: ");
-                    float weight = scanner.nextFloat();
-                    System.out.print("Enter dimensions (length, width, height): ");
-                    float length = scanner.nextFloat();
-                    float width = scanner.nextFloat();
-                    float height = scanner.nextFloat();
-                    //manager.addNewParcel(id, days, weight, length, width, height);
-                    break;
-                case 4:
-                    try {
-                        manager.processNextCustomer();
-                    } catch (IllegalStateException e) {
-                        System.out.println("No customers in queue.");
-                    }
-                    break;
-                case 5:
-                    System.out.print("Enter report filename: ");
-                    String filename = scanner.nextLine();
-                    manager.printReport(filename);
-                    break;
-                case 6:
-                    System.out.println("Exiting system.");
-                    scanner.close();
-                    return;
-                default:
-                    System.out.println("Invalid option. Please try again.");
-            }
+    private List<Customer> getCustomerList() {
+        List<Customer> customers = new ArrayList<>();
+        Queue<Customer> tempQueue = new LinkedList<>(customerQueue.getCustomers());
+        
+        while (!tempQueue.isEmpty()) {
+            customers.add(tempQueue.poll());
         }
+        
+        return customers;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            DepotModel model = new DepotModel();
+            DepotView view = new DepotView();
+            DepotController controller = new DepotController(model, view);
+            view.setVisible(true);
+        });
     }
 } 
